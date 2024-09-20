@@ -3,7 +3,7 @@ from sec_parser.exceptions import (
     SecParserRuntimeError,
     SecParserValueError,
 )
-from sec_parser.processing_engine.core import Edgar10QParser
+from sec_parser.processing_engine.core import Edgar10QParser, Edgar10KParser
 from sec_parser.processing_engine.html_tag import HtmlTag
 from sec_parser.processing_engine.types import ParsingOptions
 from sec_parser.processing_steps.abstract_classes.abstract_processing_step import (
@@ -35,6 +35,7 @@ from sec_parser.semantic_tree.tree_node import TreeNode
 __all__ = [
     # Main parser classes
     "Edgar10QParser",
+    "Edgar10KParser",
     "TreeBuilder",
     # Common semantic elements
     "AbstractSemanticElement",

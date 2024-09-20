@@ -49,6 +49,9 @@ from sec_parser.processing_steps.title_classifier import TitleClassifier
 from sec_parser.processing_steps.top_section_manager_for_10q import (
     TopSectionManagerFor10Q,
 )
+from sec_parser.processing_steps.top_section_manager_for_10k import (
+    TopSectionManagerFor10K,
+)
 
 __all__ = [
     "AbstractProcessingStep",
@@ -69,6 +72,7 @@ __all__ = [
     "TextElementMerger",
     "TitleClassifier",
     "TopSectionManagerFor10Q",
+    "TopSectionManagerFor10K",    
     "TopSectionTitleCheck",
     "XbrlTagCheck",
 ]

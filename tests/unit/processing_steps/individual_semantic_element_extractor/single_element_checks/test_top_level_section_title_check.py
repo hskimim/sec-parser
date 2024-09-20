@@ -3,7 +3,7 @@ import pytest
 
 from sec_parser.processing_engine.html_tag import HtmlTag
 from sec_parser.processing_steps.individual_semantic_element_extractor.single_element_checks.top_section_title_check import (
-    TopSectionTitleCheck,
+    TopSectionTitleCheckIn10Q,
 )
 from sec_parser.semantic_elements.abstract_semantic_element import (
     AbstractSemanticElement,
@@ -64,7 +64,7 @@ def test_top_level_section_title_check(name, html, root_tag, expected):
     bs4_tag = bs4.BeautifulSoup(html, "lxml").find(root_tag)
     assert isinstance(bs4_tag, bs4.Tag)
     html_tag = SemanticElement(HtmlTag(bs4_tag))
-    check = TopSectionTitleCheck()
+    check = TopSectionTitleCheckIn10Q()
 
     # Act
     actual = check.contains_single_element(html_tag)

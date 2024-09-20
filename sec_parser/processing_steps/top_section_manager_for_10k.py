@@ -12,7 +12,7 @@ from sec_parser.processing_steps.abstract_classes.abstract_elementwise_processin
 )
 from sec_parser.semantic_elements.top_section_title import TopSectionTitle
 from sec_parser.semantic_elements.top_section_title_types import (
-    IDENTIFIER_TO_10Q_SECTION,
+    IDENTIFIER_TO_10K_SECTION,
     InvalidTopSection,
     TopSectionType,
 )
@@ -23,8 +23,8 @@ if TYPE_CHECKING:  # pragma: no cover
     )
 
 
-part_pattern = re.compile(r"part\s+(i+)[.\s]*", re.IGNORECASE)
-item_pattern = re.compile(r"item\s+(\d+a?)[.\s]*", re.IGNORECASE)
+part_pattern = re.compile(r"part\s+([ivxlcdm]+)[.\s]*", re.IGNORECASE)
+item_pattern = re.compile(r"item\s+(\d+[a-z]?)[.\s]*", re.IGNORECASE)
 
 
 @dataclass
@@ -33,7 +33,21 @@ class _Candidate:
     element: AbstractSemanticElement
 
 
-class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
+def roman_to_arabic(roman: str) -> int:
+    roman_values = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000}
+    total = 0
+    prev_value = 0
+    for char in reversed(roman.lower()):
+        current_value = roman_values[char]
+        if current_value >= prev_value:
+            total += current_value
+        else:
+            total -= current_value
+        prev_value = current_value
+    return total
+
+
+class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
     """
     Documents are divided into sections, subsections, and so on.
     Top level sections are the highest level of sections and are
@@ -71,7 +85,8 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
     @staticmethod
     def match_part(text: str) -> str | None:
         if match := part_pattern.match(text):
-            return str(len(match.group(1)))
+            roman_numeral = match.group(1).lower()
+            return str(roman_to_arabic(roman_numeral))
         return None
 
     @staticmethod
@@ -102,6 +117,7 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
        - Invokes the `_process_iteration_1` function.
        - Returns the value returned by `_process_iteration_1`.
     """
+
     def _process_element(
         self,
         element: AbstractSemanticElement,
@@ -112,10 +128,8 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
             self._process_iteration_0(element)
             return element
 
-
         if context.iteration == 1:
             return self._process_iteration_1(element)
-
 
         msg = f"Invalid iteration: {context.iteration}"
         raise ValueError(msg)
@@ -125,6 +139,7 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
     Checks whether the given semantic element qualifies as a candidate or not.
     If it does, it appends the candidate version of the semantic element to the _candidates.
     """
+
     def _process_iteration_0(self, element: AbstractSemanticElement) -> None:
         self._identify_candidate(element)
 
@@ -150,29 +165,30 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
       the section type and the semantic element.
     - Appends the identified candidate to the list of candidates "_candidates"
     """
+
     def _identify_candidate(self, element: AbstractSemanticElement) -> None:
         candidate = None
 
         if part := self.match_part(element.text):
             self._last_part = part
+
             section_type = self._get_section_type(f"part{self._last_part}")
             if section_type is InvalidTopSection:
-                    warnings.warn(
-                        f"Invalid section type for part{self._last_part}. Defaulting to InvalidTopSection.",
-                        UserWarning,
-                        stacklevel=8,
-                    )
+                warnings.warn(
+                    f"Invalid section type for part{self._last_part}. Defaulting to InvalidTopSection.",
+                    UserWarning,
+                    stacklevel=8,
+                )
             candidate = _Candidate(section_type, element)
         elif item := self.match_item(element.text):
             section_type = self._get_section_type(f"part{self._last_part}item{item}")
             if section_type is InvalidTopSection:
-                    warnings.warn(
-                        f"Invalid section type for part{self._last_part}item{item}. Defaulting to InvalidTopSection.",
-                        UserWarning,
-                        stacklevel=8,
-                    )
+                warnings.warn(
+                    f"Invalid section type for part{self._last_part}item{item}. Defaulting to InvalidTopSection.",
+                    UserWarning,
+                    stacklevel=8,
+                )
             candidate = _Candidate(section_type, element)
-
 
         if candidate is not None:
             self._candidates.append(candidate)
@@ -183,7 +199,7 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
 
     """
     Returns the corresponding TopSectionType of the given identifier. The TopSectionType represents a standard top section type in the context of a 10-Q report.
-    The function utilizes the IDENTIFIER_TO_10Q_SECTION dictionary.
+    The function utilizes the IDENTIFIER_TO_10K_SECTION dictionary.
 
     Input:
     - identifier (type: String): an identifier of a top section title expressed by a string
@@ -191,8 +207,9 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
     Output:
     - returns the corresponding TopSectionType of the given identifier. Returns InvalisTopSection if the identifier doesn't match any TopSectionType.
     """
+
     def _get_section_type(self, identifier: str) -> TopSectionType:
-        return IDENTIFIER_TO_10Q_SECTION.get(identifier, InvalidTopSection)
+        return IDENTIFIER_TO_10K_SECTION.get(identifier, InvalidTopSection)
 
     """"
     Groups candidates by section type. Then selects the first element candidate of each section type by using the helper function select_element.
@@ -203,11 +220,11 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
 
     Enhancement: select_element can be omitted. It basically returns the first element.
     """
+
     def _select_candidates(self) -> tuple[_Candidate, ...]:
         grouped_candidates = defaultdict(list)
         for candidate in self._candidates:
             grouped_candidates[candidate.section_type].append(candidate.element)
-
 
         """
          Selects a semantic element from the provided list based on specific criteria.
@@ -218,20 +235,17 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
          Output:
         - The selected AbstractSemanticElement.
         """
-        def select_element(elements: list[AbstractSemanticElement]) -> AbstractSemanticElement:
 
+        def select_element(elements: list[AbstractSemanticElement]) -> AbstractSemanticElement:
 
             if len(elements) == 1:
                 return elements[0]
             elements_without_table = [
-                        element
-                        for element in elements
-                        if not element.html_tag.contains_tag("table", include_self = True)
-                    ]
+                element for element in elements if not element.html_tag.contains_tag("table", include_self=True)
+            ]
             if len(elements_without_table) >= 1:
-                    return elements_without_table[0]
+                return elements_without_table[0]
             return elements[0]
-
 
         return tuple(
             _Candidate(
@@ -254,12 +268,11 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
     Output:
     - Either the original input element or a newly generated top section title element associated with the input element.
     """
-    def _process_selected_candidates(self, element: AbstractSemanticElement) -> AbstractSemanticElement:
 
+    def _process_selected_candidates(self, element: AbstractSemanticElement) -> AbstractSemanticElement:
 
         if self._selected_candidates is None:
             return element
-
 
         for candidate in self._selected_candidates:
             if candidate.element is element:
@@ -287,7 +300,8 @@ class TopSectionManagerFor10Q(AbstractElementwiseProcessingStep):
         )
 
     def _create_top_section_title(
-        self, candidate: _Candidate,
+        self,
+        candidate: _Candidate,
     ) -> AbstractSemanticElement:
         return TopSectionTitle.create_from_element(
             candidate.element,
