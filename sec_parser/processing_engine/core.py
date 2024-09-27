@@ -50,6 +50,7 @@ from sec_parser.processing_steps.top_section_manager_for_10q import (
 )
 from sec_parser.processing_steps.top_section_manager_for_10k import (
     TopSectionManagerFor10K,
+    TopSectionManagerFor10KForKR,
 )
 
 from sec_parser.semantic_elements.composite_semantic_element import (
@@ -273,7 +274,7 @@ class Edgar10KParserForKR(AbstractSemanticElementParser):
             EmptyElementClassifier(types_to_process={NotYetClassifiedElement}),
             TableClassifier(types_to_process={NotYetClassifiedElement}),
             TableOfContentsClassifier(types_to_process={TableElement}),
-            TopSectionTitleCheckIn10KForKR(),
+            TopSectionManagerFor10KForKR(),
             IntroductorySectionElementClassifier(),
             TextClassifier(types_to_process={NotYetClassifiedElement}),
             HighlightedTextClassifier(types_to_process={TextElement}),
@@ -295,5 +296,5 @@ class Edgar10KParserForKR(AbstractSemanticElementParser):
             TableCheck(),
             XbrlTagCheck(),
             ImageCheck(),
-            TopSectionTitleCheckIn10K(),
+            TopSectionTitleCheckIn10KForKR(),
         ]
