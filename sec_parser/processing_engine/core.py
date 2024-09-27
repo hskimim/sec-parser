@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Literal
 
 from sec_parser.processing_engine.html_tag_parser import (
     AbstractHtmlTagParser,
@@ -150,17 +150,13 @@ class AbstractSemanticElementParser(ABC):
         include_irrelevant_elements: bool | None = None,
     ) -> list[AbstractSemanticElement]:
         steps = self._get_steps()
-        elements: list[AbstractSemanticElement] = [
-            NotYetClassifiedElement(tag) for tag in root_tags
-        ]
+        elements: list[AbstractSemanticElement] = [NotYetClassifiedElement(tag) for tag in root_tags]
 
         for step in steps:
             elements = step.process(elements)
 
         if not include_irrelevant_elements:
-            elements = [
-                e for e in elements if isinstance(e, IrrelevantElement) is False
-            ]
+            elements = [e for e in elements if isinstance(e, IrrelevantElement) is False]
         if unwrap_elements is False:
             return elements
         return CompositeSemanticElement.unwrap_elements(
@@ -223,6 +219,17 @@ class Edgar10KParser(AbstractSemanticElementParser):
     the visual structure of the original document.
     """
 
+    def __init__(
+        self,
+        get_steps: Callable[[], list[AbstractProcessingStep]] | None = None,
+        language: Literal["en", "kr"] = "en",
+        *,
+        parsing_options: ParsingOptions | None = None,
+        html_tag_parser: AbstractHtmlTagParser | None = None,
+    ) -> None:
+        super().__init__(get_steps, parsing_options, html_tag_parser)
+        self._language = language
+
     def get_default_steps(
         self,
         get_checks: Callable[[], list[AbstractSingleElementCheck]] | None = None,
@@ -236,7 +243,7 @@ class Edgar10KParser(AbstractSemanticElementParser):
             EmptyElementClassifier(types_to_process={NotYetClassifiedElement}),
             TableClassifier(types_to_process={NotYetClassifiedElement}),
             TableOfContentsClassifier(types_to_process={TableElement}),
-            TopSectionManagerFor10K(),
+            TopSectionManagerFor10K(self._language),
             IntroductorySectionElementClassifier(),
             TextClassifier(types_to_process={NotYetClassifiedElement}),
             HighlightedTextClassifier(types_to_process={TextElement}),
