@@ -27,6 +27,7 @@ from sec_parser.processing_steps.individual_semantic_element_extractor.single_el
 )
 from sec_parser.processing_steps.individual_semantic_element_extractor.single_element_checks.top_section_title_check import (
     TopSectionTitleCheckIn10K,
+    TopSectionTitleCheckIn10KForKR,
     TopSectionTitleCheckIn10Q,
 )
 from sec_parser.processing_steps.individual_semantic_element_extractor.single_element_checks.xbrl_tag_check import (
@@ -76,5 +77,6 @@ __all__ = [
     "TopSectionManagerFor10K",
     "TopSectionTitleCheckIn10Q",
     "TopSectionTitleCheckIn10K",
+    "TopSectionTitleCheckIn10KForKR",
     "XbrlTagCheck",
 ]
