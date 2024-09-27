@@ -227,7 +227,11 @@ class Edgar10KParser(AbstractSemanticElementParser):
         parsing_options: ParsingOptions | None = None,
         html_tag_parser: AbstractHtmlTagParser | None = None,
     ) -> None:
-        super().__init__(get_steps, parsing_options, html_tag_parser)
+        super().__init__(
+            get_steps=get_steps,
+            parsing_options=parsing_options,
+            html_tag_parser=html_tag_parser,
+        )
         self._language = language
 
     def get_default_steps(
