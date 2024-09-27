@@ -65,6 +65,21 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
 
     _NUM_ITERATIONS = 2
 
+    def __init__(
+        self,
+        *,
+        types_to_process: set[type[AbstractSemanticElement]] | None = None,
+        types_to_exclude: set[type[AbstractSemanticElement]] | None = None,
+    ) -> None:
+        super().__init__(
+            types_to_process=types_to_process,
+            types_to_exclude=types_to_exclude,
+        )
+        self._candidates: list[_Candidate] = []
+        self._selected_candidates: tuple[_Candidate, ...] | None = None
+        self._last_part: str = "?"
+        self._last_order_number = float("-inf")
+
     @classmethod
     def is_match_part_or_item(cls, text: str) -> bool:
         part_match = cls.match_part(text) is not None
@@ -336,6 +351,7 @@ Return the element unchanged.
 
 
 class TopSectionManagerFor10KForKR(TopSectionManagerFor10K):
+
     @staticmethod
     def match_part(text: str) -> str | None:
         if match := part_pattern_kr.match(text):
