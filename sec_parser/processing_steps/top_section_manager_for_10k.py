@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import re
 import warnings
 from collections import defaultdict
@@ -13,6 +15,7 @@ from sec_parser.processing_steps.abstract_classes.abstract_elementwise_processin
 from sec_parser.semantic_elements.top_section_title import TopSectionTitle
 from sec_parser.semantic_elements.top_section_title_types import (
     IDENTIFIER_TO_10K_SECTION,
+    IDENTIFIER_TO_10K_SECTION_KR,
     InvalidTopSection,
     TopSectionType,
 )
@@ -64,6 +67,7 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
     def __init__(
         self,
         *,
+        language: Literal["en", "kr"] = "en",
         types_to_process: set[type[AbstractSemanticElement]] | None = None,
         types_to_exclude: set[type[AbstractSemanticElement]] | None = None,
     ) -> None:
@@ -71,6 +75,7 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
             types_to_process=types_to_process,
             types_to_exclude=types_to_exclude,
         )
+        self._language = language
         self._candidates: list[_Candidate] = []
         self._selected_candidates: tuple[_Candidate, ...] | None = None
         self._last_part: str = "?"
@@ -209,7 +214,12 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
     """
 
     def _get_section_type(self, identifier: str) -> TopSectionType:
-        return IDENTIFIER_TO_10K_SECTION.get(identifier, InvalidTopSection)
+        if self._language == "en":
+            return IDENTIFIER_TO_10K_SECTION.get(identifier, InvalidTopSection)
+        elif self._language == "kr":
+            return IDENTIFIER_TO_10K_SECTION_KR.get(identifier, InvalidTopSection)
+        else:
+            raise ValueError(f"Invalid language: {self._language}")
 
     """"
     Groups candidates by section type. Then selects the first element candidate of each section type by using the helper function select_element.
