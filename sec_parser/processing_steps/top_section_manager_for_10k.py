@@ -367,3 +367,33 @@ class TopSectionManagerFor10KForKR(TopSectionManagerFor10K):
 
     def _get_section_type(self, identifier: str) -> TopSectionType:
         return IDENTIFIER_TO_10K_SECTION_KR.get(identifier, InvalidTopSection)
+
+    def _identify_candidate(self, element: AbstractSemanticElement) -> None:
+        candidate = None
+
+        if part := self.match_part(element.text):
+            self._last_part = part
+            section_type = self._get_section_type(f"파트{self._last_part}")
+            if section_type is InvalidTopSection:
+                warnings.warn(
+                    f"Invalid section type for part{self._last_part}. Defaulting to InvalidTopSection.",
+                    UserWarning,
+                    stacklevel=8,
+                )
+            candidate = _Candidate(section_type, element)
+        elif item := self.match_item(element.text):
+            section_type = self._get_section_type(f"파트{self._last_part}항목{item}")
+            if section_type is InvalidTopSection:
+                warnings.warn(
+                    f"Invalid section type for part{self._last_part}item{item}. Defaulting to InvalidTopSection.",
+                    UserWarning,
+                    stacklevel=8,
+                )
+            candidate = _Candidate(section_type, element)
+
+        if candidate is not None:
+            self._candidates.append(candidate)
+            element.processing_log.add_item(
+                message=f"Identified as candidate: {candidate.section_type.identifier}",
+                log_origin=self.__class__.__name__,
+            )
