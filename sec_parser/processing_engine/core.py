@@ -25,6 +25,7 @@ from sec_parser.processing_steps.individual_semantic_element_extractor.single_el
 from sec_parser.processing_steps.individual_semantic_element_extractor.single_element_checks.top_section_title_check import (
     TopSectionTitleCheckIn10Q,
     TopSectionTitleCheckIn10K,
+    TopSectionTitleCheckIn10KForKR,
 )
 from sec_parser.processing_steps.individual_semantic_element_extractor.single_element_checks.xbrl_tag_check import (
     XbrlTagCheck,
@@ -219,21 +220,6 @@ class Edgar10KParser(AbstractSemanticElementParser):
     the visual structure of the original document.
     """
 
-    def __init__(
-        self,
-        get_steps: Callable[[], list[AbstractProcessingStep]] | None = None,
-        language: Literal["en", "kr"] = "en",
-        *,
-        parsing_options: ParsingOptions | None = None,
-        html_tag_parser: AbstractHtmlTagParser | None = None,
-    ) -> None:
-        super().__init__(
-            get_steps=get_steps,
-            parsing_options=parsing_options,
-            html_tag_parser=html_tag_parser,
-        )
-        self._language = language
-
     def get_default_steps(
         self,
         get_checks: Callable[[], list[AbstractSingleElementCheck]] | None = None,
@@ -247,7 +233,47 @@ class Edgar10KParser(AbstractSemanticElementParser):
             EmptyElementClassifier(types_to_process={NotYetClassifiedElement}),
             TableClassifier(types_to_process={NotYetClassifiedElement}),
             TableOfContentsClassifier(types_to_process={TableElement}),
-            TopSectionManagerFor10K(language=self._language),
+            TopSectionManagerFor10K(),
+            IntroductorySectionElementClassifier(),
+            TextClassifier(types_to_process={NotYetClassifiedElement}),
+            HighlightedTextClassifier(types_to_process={TextElement}),
+            SupplementaryTextClassifier(
+                types_to_process={TextElement, HighlightedTextElement},
+            ),
+            PageHeaderClassifier(
+                types_to_process={TextElement, HighlightedTextElement},
+            ),
+            PageNumberClassifier(
+                types_to_process={TextElement, HighlightedTextElement},
+            ),
+            TitleClassifier(types_to_process={HighlightedTextElement}),
+            TextElementMerger(),
+        ]
+
+    def get_default_single_element_checks(self) -> list[AbstractSingleElementCheck]:
+        return [
+            TableCheck(),
+            XbrlTagCheck(),
+            ImageCheck(),
+            TopSectionTitleCheckIn10K(),
+        ]
+
+
+class Edgar10KParserForKR(AbstractSemanticElementParser):
+    def get_default_steps(
+        self,
+        get_checks: Callable[[], list[AbstractSingleElementCheck]] | None = None,
+    ) -> list[AbstractProcessingStep]:
+
+        return [
+            IndividualSemanticElementExtractor(
+                get_checks=get_checks or self.get_default_single_element_checks,
+            ),
+            ImageClassifier(types_to_process={NotYetClassifiedElement}),
+            EmptyElementClassifier(types_to_process={NotYetClassifiedElement}),
+            TableClassifier(types_to_process={NotYetClassifiedElement}),
+            TableOfContentsClassifier(types_to_process={TableElement}),
+            TopSectionTitleCheckIn10KForKR(),
             IntroductorySectionElementClassifier(),
             TextClassifier(types_to_process={NotYetClassifiedElement}),
             HighlightedTextClassifier(types_to_process={TextElement}),

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
-
 import re
 import warnings
 from collections import defaultdict
@@ -28,6 +26,9 @@ if TYPE_CHECKING:  # pragma: no cover
 
 part_pattern = re.compile(r"part\s+([ivxlcdm]+)[.\s]*", re.IGNORECASE)
 item_pattern = re.compile(r"item\s+(\d+[a-z]?)[.\s]*", re.IGNORECASE)
+
+part_pattern_kr = re.compile(r"파트\s+([ivxlcdm]+)[.\s]*", re.IGNORECASE)
+item_pattern_kr = re.compile(r"항목\s+(\d+[a-z]?)[.\s]*", re.IGNORECASE)
 
 
 @dataclass
@@ -63,23 +64,6 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
     """
 
     _NUM_ITERATIONS = 2
-
-    def __init__(
-        self,
-        *,
-        language: Literal["en", "kr"] = "en",
-        types_to_process: set[type[AbstractSemanticElement]] | None = None,
-        types_to_exclude: set[type[AbstractSemanticElement]] | None = None,
-    ) -> None:
-        super().__init__(
-            types_to_process=types_to_process,
-            types_to_exclude=types_to_exclude,
-        )
-        self._language = language
-        self._candidates: list[_Candidate] = []
-        self._selected_candidates: tuple[_Candidate, ...] | None = None
-        self._last_part: str = "?"
-        self._last_order_number = float("-inf")
 
     @classmethod
     def is_match_part_or_item(cls, text: str) -> bool:
@@ -214,12 +198,7 @@ class TopSectionManagerFor10K(AbstractElementwiseProcessingStep):
     """
 
     def _get_section_type(self, identifier: str) -> TopSectionType:
-        if self._language == "en":
-            return IDENTIFIER_TO_10K_SECTION.get(identifier, InvalidTopSection)
-        elif self._language == "kr":
-            return IDENTIFIER_TO_10K_SECTION_KR.get(identifier, InvalidTopSection)
-        else:
-            raise ValueError(f"Invalid language: {self._language}")
+        return IDENTIFIER_TO_10K_SECTION.get(identifier, InvalidTopSection)
 
     """"
     Groups candidates by section type. Then selects the first element candidate of each section type by using the helper function select_element.
@@ -354,3 +333,21 @@ Update the last order number and returns the top section title element version o
  or log the order number if it's not greater and continues to scan the list of selected candidates.
 Return the element unchanged.
 """
+
+
+class TopSectionManagerFor10KForKR(TopSectionManagerFor10K):
+    @staticmethod
+    def match_part(text: str) -> str | None:
+        if match := part_pattern_kr.match(text):
+            roman_numeral = match.group(1).lower()
+            return str(roman_to_arabic(roman_numeral))
+        return None
+
+    @staticmethod
+    def match_item(text: str) -> str | None:
+        if match := item_pattern_kr.match(text):
+            return match.group(1).lower()
+        return None
+
+    def _get_section_type(self, identifier: str) -> TopSectionType:
+        return IDENTIFIER_TO_10K_SECTION_KR.get(identifier, InvalidTopSection)
