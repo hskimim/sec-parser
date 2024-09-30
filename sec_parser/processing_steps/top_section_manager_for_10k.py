@@ -385,7 +385,7 @@ class TopSectionManagerFor10KForKR(TopSectionManagerFor10K):
             section_type = self._get_section_type(f"파트{self._last_part}항목{item}")
             if section_type is InvalidTopSection:
                 warnings.warn(
-                    f"Invalid section type for part{self._last_part}item{item}. Defaulting to InvalidTopSection.",
+                    f"Invalid section type for 파트{self._last_part}항목{item}. Defaulting to InvalidTopSection.",
                     UserWarning,
                     stacklevel=8,
                 )
